@@ -8,7 +8,7 @@ bool splitLine(const std::string& str, const std::string& prefix, std::string& p
     return true;
 }
 
-std::set<std::string> users = {"42"};
+std::set<std::string> users = {"<42>"};
 class Client {
     public:
     bool dataMode = false;
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
         std::cout << "Accepted connection from " << clientSocket->hostRemote << ":" << clientSocket->portRemote << std::endl;
 
         std::iostream stream(clientSocket.get());
-        stream << "220 Service ready\n";
+        stream << "220 Service ready\r\n";
         stream.flush();
 
         std::unique_ptr<Client> client(new Client());
@@ -63,28 +63,28 @@ int main(int argc, char** argv) {
             if(received != ".\r\n")
                 client->data += received;
             else if(client->finalize())
-                stream << "250 OK\n";
+                stream << "250 OK\r\n";
             else
                 stream << "503 Bad sequence of commands\n";
         } else if(splitLine(received, "HELO ", client->name)) {
-            stream << "250 OK\n";
+            stream << "250 OK\r\n";
         } else if(splitLine(received, "MAIL FROM:", client->from)) {
-            stream << "250 OK\n";
-        } else if(splitLine(received, "RCPT TT:", client->recipient)) {
+            stream << "250 OK\r\n";
+        } else if(splitLine(received, "RCPT TO:", client->recipient)) {
             if(users.find(client->recipient) != users.end())
-                stream << "250 OK\n";
+                stream << "250 OK\r\n";
             else
-                stream << "551 Unknown recipient\n";
+                stream << "551 Unknown recipient\r\n";
         } else if(received == "DATA\r\n") {
-            stream << "354 Start mail input\n";
+            stream << "354 Start mail input\r\n";
             client->dataMode = true;
         } else if(received == "QUIT\r\n") {
-            stream << "221 Closing channel\n";
+            stream << "221 Closing channel\r\n";
             std::cout << "Lost connection of " << clientSocket->hostRemote << ":" << clientSocket->portRemote << std::endl;
             clients.erase(clientSocket);
             socket->disconnect();
         } else
-            stream << "500 Command not recognized\n";
+            stream << "500 Command not recognized\r\n";
         stream.flush();
     };
 
